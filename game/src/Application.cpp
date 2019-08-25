@@ -1,14 +1,68 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-int main(void)
-{
+
+static unsigned int CompileShader(unsigned int type, const std::string& source) {
+	unsigned int id = glCreateShader(type);
+	const char* src = source.c_str();
+
+	/* id : the shader we created earlier
+	 * 1: how many source codes
+	 * &src : the source code
+	 * nullptr : length, think this is the array of the lengths of each source code
+	 */
+	glShaderSource(id, 1, &src, nullptr);
+	glCompileShader(id);
+
+	/* Error handling */
+	int result;
+	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
+	if (result == GL_FALSE) {
+		int length;
+		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
+
+		/* alloca is so we can allocate a variable size array on the stack.
+		 * Video comments recommended against this, as it's inconsistently implemented.
+		 */
+		char* message = (char*)alloca(length * sizeof(char));
+
+		/* shader id, max message length, length address for some reason,
+		 * and a buffer to write message to
+		 */
+		glGetShaderInfoLog(id, length, &length, message);
+		std::cout << "Failed to compile " <<
+			(type == GL_VERTEX_SHADER ? "vertex" : "fragment")
+			<< " shader!" << std::endl;
+		std::cout << message << std::endl;
+		glDeleteShader(id);
+		return 0;
+	}
+	return id;
+}
+
+/* For simplicity, shader source code will be a string in our code */
+static unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader) {
+	unsigned int program = glCreateProgram();
+	unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
+	unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
+
+	glAttachShader(program, vs);
+	glAttachShader(program, fs);
+	glLinkProgram(program);
+	glValidateProgram(program);
+
+	glDeleteShader(vs);
+	glDeleteShader(fs);
+
+	return program;
+}
+
+int main(void) {
 	GLFWwindow* window;
 
 	/* Initialize the library */
 	if (!glfwInit())
 		return -1;
-
 
 	/* Create a windowed mode window and its OpenGL context */
 	window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
@@ -27,6 +81,7 @@ int main(void)
 
 	std::cout << glGetString(GL_VERSION) << std::endl;
 
+	/* This is all Vertex data. Positions in this case, but will contain other data normally */
 	float positions[6] = {
 		-0.5f, -0.5f,
 		0.0f, 0.5f,
@@ -37,9 +92,45 @@ int main(void)
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
 	
+	/* A vertex contains position, texture, normal etc. Any data about a point; not just position.
+	 * With a buffer bound, glVertexAttribPointer adds an attribute to a vertex.
+	 * 0 : offset, we only have one attribute so no offset. The next attribute would be offset by the size of this one.
+	       Pass this to the enable function also.
+	 * 2 : number of items per complete data set. In this case, an x and a y
+	 * GL_FLOAT : the data type
+	 * GL_FALSE : do we want OpenGL to try to normalise our data?
+	 * sizeof(float) * 2 : the width of our data set in bytes
+	 * 0 : distance to the following data type of our attribute
+	 */
+	unsigned int attributeIndex = 0;
+	glEnableVertexAttribArray(attributeIndex);
+	glVertexAttribPointer(attributeIndex, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0); /* */
+
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	/* There are better ways to write shaders that in the cpp code,
+	 * but this will do for a demonstration.
+	 * layout(location = 0) refers to attributeIndex
+	 * We need to use vec4, even though we're drawing a vec2. OpenGL will cast it
+	 * In fragmentShader, color is an rgba
+	 */
+	std::string vertexShader =
+		"#version 330 core\n"
+		"layout(location = 0) in vec4 position;\n"
+		"void main() {\n"
+		"  gl_Position = position;\n"
+		"}\n";
+	std::string fragmentShader =
+		"#version 330 core\n"
+		"layout(location = 0) out vec4 color;\n"
+		"void main() {\n"
+		"  color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+		"}\n";
+	unsigned int shader = CreateShader(vertexShader, fragmentShader);
+	glUseProgram(shader);
+
 	/* Loop until the user closes the window */
-	while (!glfwWindowShouldClose(window))
-	{
+	while (!glfwWindowShouldClose(window)) {
 		/* Render here */
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -50,12 +141,16 @@ int main(void)
 		glVertex2f(0.5f, -0.5f);
 		glEnd();*/
 
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
 
 		/* Poll for and process events */
 		glfwPollEvents();
 	}
+
+	glDeleteProgram(shader);
 
 	glfwTerminate();
 	return 0;
