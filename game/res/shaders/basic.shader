@@ -12,9 +12,12 @@ void main() {
 
 layout(location = 0) out vec4 color;
 
+uniform vec4 u_Color;
+
 void main() {
-	color = vec4(1.0, 0.0, 0.0, 1.0); // red
-	//color = vec4(0.2, 0.8, 0.3, 1.0); // weird green
+	//color = vec4(1.0, 0.0, 0.0, 1.0); // red
+	//color = vec4(0.2, 0.3, 0.8, 1.0); // blue
+	color = u_Color; // Using the uniform instead
 };
 
 /* This is a video suggested way of reading a shader into the application.

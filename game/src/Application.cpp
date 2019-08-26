@@ -130,6 +130,9 @@ int main(void) {
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 
+	/* Sync buffer swap with monitor refresh rate */
+	glfwSwapInterval(1);
+
 	if (glewInit() != GLEW_OK) {
 		std::cout << "Died" << std::endl;
 	}
@@ -178,6 +181,13 @@ int main(void) {
 	unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
 	GLCall(glUseProgram(shader));
 
+	/* 4f because we're passing 4 floats (to a vec4) */
+	GLCall(int location = glGetUniformLocation(shader, "u_Color"));
+	ASSERT(location != -1);
+	GLCall(glUniform4f(location, 0.2f, 0.3f, 0.8f, 1.0f)) ;
+
+	float r = 0.0f;
+	float increment = 0.05;
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window)) {
 		/* Render here */
@@ -190,6 +200,8 @@ int main(void) {
 		glVertex2f(0.5f, -0.5f);
 		glEnd();*/
 
+		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
+
 		/* If we were just drawing vetices, we'd use: 
 		 * glDrawArrays(GL_TRIANGLES, 0, 3);
 		 * To draw an index buffer, use glDrawElements
@@ -200,6 +212,15 @@ int main(void) {
 		 */
 		GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 		//GLCall(glDrawElements(GL_TRIANGLES, 6, GL_INT, nullptr)); /* An error introduced */
+
+		if (r > 1.0f) {
+			increment = -0.05f;
+		}
+		else if (r < 0.0f) {
+			increment = 0.05f;
+		}
+
+		r += increment;
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
