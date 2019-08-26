@@ -115,17 +115,25 @@ int main(void) {
 
 	std::cout << glGetString(GL_VERSION) << std::endl;
 
-	/* This is all Vertex data. Positions in this case, but will contain other data normally */
-	float positions[6] = {
+	/* This is all Vertex data. Positions in this case, but will contain other data normally.
+	 * The GPU draws triangles, and these are the points of a square.
+	 * We use an index buffer to tell the GPU what order to draw these in, making our shape up in triangles.
+	 * Advantage of this is we don't need to duplicate vertices. */
+	float positions[] = {
 		-0.5f, -0.5f,
-		0.0f, 0.5f,
-		0.5f, -0.5f
+		 0.5f, -0.5f,
+		 0.5f,  0.5f,
+		-0.5f,  0.5f
+	};
+	unsigned int indices[] = {
+		0, 1, 2,
+		2, 3, 0
 	};
 	unsigned int buffer;
 	glGenBuffers(1, &buffer); /* The object ID and buffer */
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
-	
+	glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), positions, GL_STATIC_DRAW); /* 6 * 2 because we have 6 vertices, each with an x and y float position */
+
 	/* A vertex contains position, texture, normal etc. Any data about a point; not just position.
 	 * With a buffer bound, glVertexAttribPointer adds an attribute to a vertex.
 	 * 0 : offset, we only have one attribute so no offset. The next attribute would be offset by the size of this one.
@@ -138,7 +146,12 @@ int main(void) {
 	 */
 	unsigned int attributeIndex = 0;
 	glEnableVertexAttribArray(attributeIndex);
-	glVertexAttribPointer(attributeIndex, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0); /* */
+	glVertexAttribPointer(attributeIndex, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+
+	unsigned int indexBufferObject;
+	glGenBuffers(1, &indexBufferObject);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferObject);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW);
 
 	ShaderProgramSource source = ParseShader("res/shaders/basic.shader");
 	unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
@@ -156,7 +169,15 @@ int main(void) {
 		glVertex2f(0.5f, -0.5f);
 		glEnd();*/
 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		/* If we were just drawing vetices, we'd use: 
+		 * glDrawArrays(GL_TRIANGLES, 0, 3);
+		 * To draw an index buffer, use glDrawElements
+		 * 6 : number of vertices
+		 * nullptr : We've already bound indexBufferObject, so we don't need this arg
+		 * 
+		 * glDrawElements is the main, most correct way to be drawing in OpenGL. We'll see this a lot.
+		 */
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
