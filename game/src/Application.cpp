@@ -119,6 +119,11 @@ int main(void) {
 	if (!glfwInit())
 		return -1;
 
+	/* Could also have COMAPT profile */
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 	/* Create a windowed mode window and its OpenGL context */
 	window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
 	if (!window)
@@ -153,13 +158,22 @@ int main(void) {
 		0, 1, 2,
 		2, 3, 0
 	};
+
+	/* We must not pass 0 as the object ID. 1 is the first allowed.
+	 * The ID gets written to &vertexArrayObject.
+	 */
+	unsigned int vertexArrayObject;
+	GLCall(glGenVertexArrays(1, &vertexArrayObject));
+	GLCall(glBindVertexArray(vertexArrayObject));
+
 	unsigned int buffer;
 	GLCall(glGenBuffers(1, &buffer)); /* The object ID and buffer */
 	GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer));
-	GLCall(glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), positions, GL_STATIC_DRAW)); /* 6 * 2 because we have 6 vertices, each with an x and y float position */
+	GLCall(glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions, GL_STATIC_DRAW)); /* 6 * 2 because we have 6 vertices, each with an x and y float position */
 
 	/* A vertex contains position, texture, normal etc. Any data about a point; not just position.
 	 * With a buffer bound, glVertexAttribPointer adds an attribute to a vertex.
+	 * This is also bound to the current vertex array, which we are now defining ourselves.
 	 * 0 : offset, we only have one attribute so no offset. The next attribute would be offset by the size of this one.
 	       Pass this to the enable function also.
 	 * 2 : number of items per complete data set. In this case, an x and a y
@@ -186,6 +200,12 @@ int main(void) {
 	ASSERT(location != -1);
 	GLCall(glUniform4f(location, 0.2f, 0.3f, 0.8f, 1.0f)) ;
 
+	// eg code: unbind everything
+	GLCall(glBindVertexArray(0));
+	GLCall(glUseProgram(0));
+	GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
 	float r = 0.0f;
 	float increment = 0.05;
 	/* Loop until the user closes the window */
@@ -200,7 +220,17 @@ int main(void) {
 		glVertex2f(0.5f, -0.5f);
 		glEnd();*/
 
+		/* The draw process is: 
+		 * - Bind shader
+		 * - Bind Vertex Array
+		 * - Bind index buffer
+		 * - Draw call
+		 */
+		GLCall(glUseProgram(shader));
 		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
+
+		GLCall(glBindVertexArray(vertexArrayObject));
+		GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferObject));
 
 		/* If we were just drawing vetices, we'd use: 
 		 * glDrawArrays(GL_TRIANGLES, 0, 3);

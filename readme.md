@@ -28,6 +28,25 @@ Follow along of https://www.youtube.com/watch?v=W3gAzLwfIP0 :heart:
 - Shaders can be complex. They are often generated on the fly
 - GLSL is OpenGL shader language 
 
+## Vertex Arrays (VAO)
+- A way to bind vertex buffers (the vertex data, coordinates, attributes etc) with configuration
+- Vertex buffers do not get stored with the layout. Without vertex arrays, we'd need to bind the vertex buffer on each draw
+- Draw process without using vertex arrays:
+  - bind shader
+  - bind vertex buffer
+  - set up vertex layout
+  - bind index buffer
+  - draw call
+- Draw process using vertex arrays:
+  - bind shader
+  - bind vertex array
+  - bind index buffer
+  - draw call
+- Vertex arrays are actually mandatory. In CORE progile, a default will be created.
+- There are two ways we could use Vertex Arrays
+  - Bind one vertex array for the lifetime of the application, and bind vertex buffers and layouts every time you want to draw. This is what would happen in COMPAT profile. A few years ago, this was benchmarking to be the more performant approach
+  - Create a vertex array for each geometry we want to draw. This is recommended in OpenGL
+
 ## Visual Studio
 - Visual Studio project properties are stored within .sln and .proj files. The .vs folder can be gitignored. If they appear not to be carried over, make sure the configuration is set to "All configurations".
 - Undeclared symbol errors are common. If you google the method name, you should find a windows dev page about it. There's a table with the library it comes from. In properties > Linker > Input, add that library, and the problem goes away
