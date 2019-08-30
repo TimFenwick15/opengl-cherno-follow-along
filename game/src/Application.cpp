@@ -8,6 +8,7 @@
 #include "Renderer.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "VertexArray.h"
 
 struct ShaderProgramSource {
 	std::string VertexSource;
@@ -148,29 +149,11 @@ int main(void) {
 			2, 3, 0
 		};
 
-		/* We must not pass 0 as the object ID. 1 is the first allowed.
-		 * The ID gets written to &vertexArrayObject.
-		 */
-		unsigned int vertexArrayObject;
-		GLCall(glGenVertexArrays(1, &vertexArrayObject));
-		GLCall(glBindVertexArray(vertexArrayObject));
-
+		VertexArray va;
 		VertexBuffer vb(positions, 4 * 2 * sizeof(float));
-
-		/* A vertex contains position, texture, normal etc. Any data about a point; not just position.
-		 * With a buffer bound, glVertexAttribPointer adds an attribute to a vertex.
-		 * This is also bound to the current vertex array, which we are now defining ourselves.
-		 * 0 : offset, we only have one attribute so no offset. The next attribute would be offset by the size of this one.
-			   Pass this to the enable function also.
-		 * 2 : number of items per complete data set. In this case, an x and a y
-		 * GL_FLOAT : the data type
-		 * GL_FALSE : do we want OpenGL to try to normalise our data?
-		 * sizeof(float) * 2 : the width of our data set in bytes
-		 * 0 : distance to the following data type of our attribute
-		 */
-		unsigned int attributeIndex = 0;
-		GLCall(glEnableVertexAttribArray(attributeIndex));
-		GLCall(glVertexAttribPointer(attributeIndex, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
+		VertexBufferLayout layout;
+		layout.Push<float>(2);
+		va.AddBuffer(vb, layout);
 
 		IndexBuffer ib(indices, 6);
 
@@ -184,7 +167,7 @@ int main(void) {
 		GLCall(glUniform4f(location, 0.2f, 0.3f, 0.8f, 1.0f));
 
 		// eg code: unbind everything
-		GLCall(glBindVertexArray(0));
+		va.Unbind();
 		GLCall(glUseProgram(0));
 		GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
 		GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
@@ -212,7 +195,7 @@ int main(void) {
 			GLCall(glUseProgram(shader));
 			GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
 
-			GLCall(glBindVertexArray(vertexArrayObject));
+			va.Bind();
 			ib.Bind();
 
 			/* If we were just drawing vetices, we'd use:
