@@ -1,7 +1,10 @@
 #pragma once
 
 #include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
+//#include "VertexBufferLayout.h"
+
+/* Forward declare instead of including. Included in CPP file */
+class VertexBufferLayout;
 
 class VertexArray {
 private:

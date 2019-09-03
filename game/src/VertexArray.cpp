@@ -1,5 +1,6 @@
 #include "VertexArray.h"
 #include "Renderer.h"
+#include "VertexBufferLayout.h"
 
 VertexArray::VertexArray() {
 	/* We must not pass 0 as the object ID. 1 is the first allowed.

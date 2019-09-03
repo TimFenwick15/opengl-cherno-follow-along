@@ -7,6 +7,7 @@
 
 #include "Renderer.h"
 #include "VertexBuffer.h"
+#include "VertexBufferLayout.h"
 #include "IndexBuffer.h"
 #include "VertexArray.h"
 
@@ -83,12 +84,14 @@ int main(void) {
 		ib.Unbind();
 		shader.Unbind();
 		
+		Renderer renderer;
+
 		float r = 0.0f;
 		float increment = 0.05;
 		/* Loop until the user closes the window */
 		while (!glfwWindowShouldClose(window)) {
 			/* Render here */
-			GLCall(glClear(GL_COLOR_BUFFER_BIT));
+			renderer.Clear();
 
 			/* This is "legacy" OpenGL. It's discouraged but fine for testing. */
 			/*glBegin(GL_TRIANGLES);
@@ -102,23 +105,14 @@ int main(void) {
 			 * - Bind Vertex Array
 			 * - Bind index buffer
 			 * - Draw call
+			 * 
+			 * Ideally, these lines would be abstracted out, but this requires materials.
+			 * Materials = shader + uniforms
 			 */
 			shader.Bind();
 			shader.SetUniform4f("u_Color", r, 0.3f, 0.8f, 1.0f);
 
-			va.Bind();
-			ib.Bind();
-
-			/* If we were just drawing vetices, we'd use:
-			 * glDrawArrays(GL_TRIANGLES, 0, 3);
-			 * To draw an index buffer, use glDrawElements
-			 * 6 : number of vertices
-			 * nullptr : We've already bound indexBufferObject, so we don't need this arg
-			 *
-			 * glDrawElements is the main, most correct way to be drawing in OpenGL. We'll see this a lot.
-			 */
-			GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
-			//GLCall(glDrawElements(GL_TRIANGLES, 6, GL_INT, nullptr)); /* An error introduced */
+			renderer.Draw(va, ib, shader);
 
 			if (r > 1.0f) {
 				increment = -0.05f;
